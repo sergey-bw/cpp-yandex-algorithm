@@ -25,8 +25,10 @@
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/22450/problems/A/
  *     Посылка 2024: https://contest.yandex.ru/contest/22450/run-report/125497479/
+ *     Посылка 2026: https://contest.yandex.ru/contest/22450/run-report/168090553/
  */
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <limits>
@@ -48,7 +50,7 @@ std::vector<int> ComputeDistance(const std::vector<int>& street) {
     }
 
     // Обратный проход
-    int zero_distance = -1;
+    zero_distance = -1;
     for (int i = n - 1; i >= 0; --i) {
         if (street[i] == 0) {
             zero_distance = 0;
@@ -71,6 +73,7 @@ std::vector<int> ReadVector(std::istream& in) {
     return vct;
 }
 
+namespace {
 std::ostream& operator<<(std::ostream& out, const std::vector<int>& vct) {
     bool is_first = true;
     for (auto el : vct) {
@@ -83,6 +86,7 @@ std::ostream& operator<<(std::ostream& out, const std::vector<int>& vct) {
     }
     return out;
 }
+}// namespace
 
 int main() {
     std::ios_base::sync_with_stdio(false);
