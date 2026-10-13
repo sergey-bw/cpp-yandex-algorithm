@@ -1,62 +1,62 @@
 /**
- * Спринт 4. Финальное задание: Хеш-таблица
- *
- * Постановка задачи:
- *     Реализовать эффективную ассоциативную структуру данных (хеш-таблицу),
- *     поддерживающую операции добавления/обновления (put), получения (get)
- *     и удаления (delete) пар «ключ-значение» целых чисел.
+ * https://contest.yandex.ru/contest/24414/run-report/131201669/
  * 
- * Ограничения:
- *     Все ключи и значения – целые числа, не превосходящие 10^9 по модулю.
- *     При любой последовательности команд, количество ключей в хеш-таблице не может
- *     превышать 10^5.
- *
- * Принцип работы:
- *     Для разрешения коллизий выбран метод открытой адресации с линейным пробированием.
- *
- *     Особенности и выбор метода:
- *         - В отличие от метода цепочек, память под все корзины выделяется один раз
- *           заранее при инициализации, что исключает накладные расходы на динамическую
- *           аллокацию памяти под каждый узел связного списка.
- *         - Корзины расположены в памяти последовательно (std::vector), обеспечивая
- *           высокую локальность данных и эффективное использование процессорного кеша
- *           (CPU cache) при линейном обходе.
- *         - В качестве хеш-функции используется приведение знакового int к беззнаковому
- *           типу size_t: отрицательные числа за счет переполнения попадают в конец диапазона,
- *           гарантируя уникальный хеш для всего диапазона int за время O(1).
- *         - Размер таблицы выбран равным 101501 (простое число), а константа шага
- *           пробирования равна 4. Так как НОД(101501, 4) = 1, пробирование гарантированно
- *           обходит абсолютно все корзины таблицы без преждевременных зацикливаний.
- *         - При удалении (delete) корзина помечается статусом DELETED (ленивое удаление),
- *           чтобы не разрывать цепочку последующего поиска для элементов, попавших в коллизию.
- *
- * Сложность:
- *     Временная:
- *         Сложность операций Добавления/Поиска/Удаления оценивается как:
- *             O(1) - в среднем случае, где вычисление хеш-функции для int занимает O(1)
- *             O(N) - в худшем случае (пробирование заполненной таблицы).
+ * Реализация:
+ *   Для реализации выбрал версию с разрешением коллизий методом открытой адресации.
+ *   Что у метода цепочек, что у открытой адресации есть свои плюсы и минусы.
  * 
- *         Парсинг запросов - O(N * M), где
- *             N - количество запросов,
- *             M - количество символов в запросе
+ *   Достоинства метода с открытой адресацией:
+ *      Не нужно выделять память при каждом добавлении нового элемента.
+ *      Память под все элементы выделяется за один раз (не считая рехеширование).
+ *      Все корзины (данные) хеш-таблицы лежат в памяти последовательно,
+ *      что позволяет эффективно использовать кеш процессора. Хотя это спорно.
+ *      Если использовать функцию пробирования возвращающую индексы лежащие далеко
+ *      друг от друга, кеш процессора не будет столь эффективным.
  * 
- *     Пространственная:
- *         O(N) - память под вектор корзин фиксированной вместимости N = 101501 (входное ограничение)
- *
- * Ссылки на контест:
- *     Условие: https://contest.yandex.ru/contest/24414/problems/B/
- *     Посылка 2024: https://contest.yandex.ru/contest/24414/run-report/131201669/
- *     Посылка 2026: https://contest.yandex.ru/contest/24414/run-report/168188063/
+ *   Минусы метода с открытой адресацией:
+ *      При определенном наборе входных данных, чтобы найти нужную корзину
+ *      может потребоваться O(N) операций для перебора всех корзин.
+ *      Это можно отчасти сгладить держа запас по вместимости хеш таблицы,
+ *      что приводит к лишнему потреблению памяти.
+ * 
+ *   Метод с открытой адресацией скорее выбран из интереса его реализовать,
+ *   чем явно обходящим по достоинствам/недостаткам метод цепочек.
+ *   Выбор конкретного метода скорей должен исходить из условий дальнейшего
+ *   использования хеш таблицы.
+ * 
+ *   В качестве кешируемой функции ключей используется приведение типа ключа (int)
+ *   к беззнаковому числу. За счет переполнения типа, отрицательные ключи
+ *   оказываются в конце диапазона.
+ *   Плюс такого подхода, весь диапазон int будет иметь уникальный кеш.
+ *   Минусом является то, что малое изменение ключа не дает большое изменение
+ *   кешированного значения.
+ * 
+ *   Метод пробирования выбран линейный.
+ *   
+ * Оценка временной сложности:
+ * 
+ *   Сложность операций Добавления/Поиска/Удаления оценивается как:
+ *      O(h) + O(1 + a), где a - коэффициент заполнения таблицы
+ *      O(h) - Сложность хеш функции = O(1) относительно хеширования int
+ * 
+ *   При запасе свободных корзин, алгоритм как правило работает за среднее время.
+ * 
+ *   Парсинг запросов - O(N*M), где
+ *      N - количество запросов,
+ *      M - количество символов в запросе
+ * 
+ * Оценка пространственной сложности:
+ *   O(101501) = O(1) ?
  */
 
 #include <iostream>
 #include <vector>
 #include <optional>
 
-const size_t HASH_TABLE_SIZE = 101501;
+const size_t HASH_TABBLE_SIZE = 101501;
 const size_t PROBE_CONST = 4;
 
-class HashTable {
+class HashTabble {
 public :
     bool Put(int key, int value) {
         std::optional<size_t> bucket_index = SearchBucketIndex(key);
@@ -64,19 +64,19 @@ public :
             if (size_ == capacity_) { // Добавлять некуда
                 return false;
             }
-            bucket_index = SearchBucketIndex(key, [](const Bucket& bucket) {
+            bucket_index = SearchBucketIndex(key, [key](const Bucket& bucket) {
                 return bucket.status != BucketStatus::USED;
             });
             ++size_;
         }
-        hash_table_[*bucket_index] = {BucketStatus::USED, key, value};
+        hash_tabble_[*bucket_index] = {BucketStatus::USED, key, value};
         return true;
     }
 
     std::optional<int> Get(int key) const noexcept {
         std::optional<size_t> bucket_index = SearchBucketIndex(key);
         if (bucket_index.has_value()) {
-            return hash_table_[*bucket_index].value;
+            return hash_tabble_[*bucket_index].value;
         }
         return std::nullopt;
     }
@@ -84,9 +84,9 @@ public :
     std::optional<int> Delete(int key) {
         std::optional<size_t> bucket_index = SearchBucketIndex(key);
         if (bucket_index.has_value()) {
-            hash_table_[*bucket_index].status = BucketStatus::DELETED;
+            hash_tabble_[*bucket_index].status = BucketStatus::DELETED;
             --size_;
-            return hash_table_[*bucket_index].value;
+            return hash_tabble_[*bucket_index].value;
         }
         return std::nullopt;
     }
@@ -120,7 +120,7 @@ private:
     std::optional<size_t> SearchBucketIndex(int key, Predicate p) const noexcept{
         size_t start_index = GetBucketIndex(key);
         size_t bucket_index = start_index;
-        while (!p(hash_table_[bucket_index])) {
+        while (!p(hash_tabble_[bucket_index])) {
             bucket_index = GetNextProbeIndex(bucket_index);
             if (bucket_index == start_index) {
                 return std::nullopt;
@@ -135,7 +135,7 @@ private:
                 || (bucket.status == BucketStatus::USED && bucket.key == key);
         });
         if (bucket_index.has_value()
-            && hash_table_[*bucket_index].status != BucketStatus::FREE)
+            && hash_tabble_[*bucket_index].status != BucketStatus::FREE)
         {
             return bucket_index;
         }
@@ -143,15 +143,12 @@ private:
     }
 
     size_t size_ = 0;
-    size_t capacity_ = HASH_TABLE_SIZE;
-    std::vector<Bucket> hash_table_{HASH_TABLE_SIZE};
+    size_t capacity_ = HASH_TABBLE_SIZE;
+    std::vector<Bucket> hash_tabble_{HASH_TABBLE_SIZE};
 };
 
 int main() {
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-
-    HashTable hash_table;
+    HashTabble hash_tabble;
     int n;
     std::cin >> n;
     using namespace std::literals;
@@ -162,7 +159,7 @@ int main() {
         if (command == "put"s) {
             int key, val;
             std::cin >> key >> val;
-            if (!hash_table.Put(key, val)) {
+            if (!hash_tabble.Put(key, val)) {
                 std::cout << "Error"s << '\n';
             }
             continue;
@@ -171,7 +168,7 @@ int main() {
         if (command == "get"s) {
             int key;
             std::cin >> key;
-            if (auto result = hash_table.Get(key); result.has_value()) {
+            if (auto result = hash_tabble.Get(key); result.has_value()) {
                 std::cout << *result << '\n';
             } else {
                 std::cout << "None"s << '\n';
@@ -182,7 +179,7 @@ int main() {
         if (command == "delete"s) {
             int key;
             std::cin >> key;
-            if (auto result = hash_table.Delete(key); result.has_value()) {
+            if (auto result = hash_tabble.Delete(key); result.has_value()) {
                 std::cout << *result << '\n';
             } else {
                 std::cout << "None"s << '\n';
