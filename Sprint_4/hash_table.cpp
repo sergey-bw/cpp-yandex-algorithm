@@ -44,7 +44,7 @@
  *
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/24414/problems/B/
- *     Посылка 2024: https://contest.yandex.ru/contest/24414/run-report/131201669/
+ *     Посылка 2025: https://contest.yandex.ru/contest/24414/run-report/131201669/
  *     Посылка 2026: https://contest.yandex.ru/contest/24414/run-report/168188063/
  */
 
