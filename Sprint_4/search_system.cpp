@@ -14,13 +14,23 @@
  *     Сортировка документов на выдаче производится по убыванию релевантности.
  *     Если релевантности документов совпадают - то по возрастанию их порядковых номеров в базе
  *     (то есть во входных данных).
+ * 
+ * Формат ввода:
+ *     - В первой строке дано натуральное число n – количество документов в базе.
+ *     - Далее в n строках даны документы по одному в строке. Каждый документ состоит из нескольких
+ *       слов, слова отделяются друг от друга одним пробелом и состоят из маленьких латинских букв.
+ *       Текст не бывает пустым.
+ *     - В следующей строке дано число запросов —– натуральное число m.
+ *     - В следующих m строках даны запросы по одному в строке. Каждый запрос состоит из одного или
+ *       нескольких слов. Запрос не бывает пустым. Слова отделяются друг от друга одним пробелом и
+ *       состоят из маленьких латинских букв.
  *
  * Ограничения:
- *     - Число документов в базе не превосходит 10^4.
- *     - Максимальное число слов в документе — не более 1000.
- *     - Число запросов — не более 10^4, слов в запросе — не более 10.
- *     - Для каждого запроса необходимо вывести не более 5 наиболее релевантных документов.
- *     - При равной релевантности приоритет отдается документу с меньшим ID.
+ *     - Число документов в базе не превосходит 10^4
+ *     - Максимальное число слов в документе — не более 1000
+ *     - Число запросов — не более 10^4, слов в запросе — не более 10
+ *     - Для каждого запроса необходимо вывести не более 5 наиболее релевантных документов
+ *     - При равной релевантности приоритет отдается документу с меньшим ID
  *
  * Принцип работы:
  *       Для исключения дублирования сырого текста документов строится обратный индекс:
@@ -66,14 +76,15 @@
  *     Посылка 2026: https://contest.yandex.ru/contest/24414/run-report/168498383/
  */
 
-#include <algorithm>
+#include <cstddef>
 #include <iostream>
+#include <utility>
+#include <type_traits>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
-#include <sstream>
-#include <iterator>
 #include <queue>
 
 const size_t MAX_TOP_DOCUMENTS = 5;
@@ -89,11 +100,16 @@ public:
 
     SearchServer() = default;
 
-    template <typename ForwardIt>
-    void AddDocument(int id, ForwardIt begin, ForwardIt end) {
-        for (auto it = begin; it != end; ++it) {
-            ++data_base_[std::move(*it)][id];
-        }
+    template <typename T>
+    void AddWord(int document_id, T&& word) {
+        static_assert(
+            std::is_same_v<
+                std::remove_cv_t<std::remove_reference_t<T>>,
+                std::string
+            >,
+            "String is required"
+        );
+        ++data_base_[std::forward<T>(word)][document_id];
     }
 
     std::vector<Document> FindAllDocuments(const Query& query) const {
@@ -110,7 +126,7 @@ public:
     }
 
     std::vector<Document> FindTopDocuments(const Query& query) const {
-        std::priority_queue<Document> queue;
+        std::priority_queue<std::pair<Relevance, Id>> queue;
         for (const auto& document: FindAllDocuments(query)) {
             queue.emplace(-document.second, document.first);
             if (queue.size() > MAX_TOP_DOCUMENTS) {
@@ -132,27 +148,35 @@ private:
     DataBase data_base_;
 };
 
+template <typename Handler>
+void ForEachWord(std::string_view text, Handler handler) {
+    size_t pos = text.find_first_not_of(' ');
+    while (pos != std::string_view::npos) {
+        const size_t end = text.find(' ', pos);
+        handler(text.substr(pos, end - pos));
+        pos = text.find_first_not_of(' ', end);
+    }
+}
+
 void ParseDocuments(SearchServer& search_server, std::istream& in) {
     int documents_count;
     in >> documents_count;
     in.ignore(); // '\n'
-    std::istringstream is{};
     for (int id = 1; id <= documents_count; ++id) {
         std::string line;
         std::getline(in, line);
-        is.clear();
-        is.str(line);
-        search_server.AddDocument(id
-            , std::istream_iterator<std::string>{is}
-            , std::istream_iterator<std::string>{});
+        ForEachWord(line, [id, &search_server](std::string_view word) {
+            search_server.AddWord(id, std::string(word));
+        });
     }
 }
 
-SearchServer::Query ParseQuery(std::istringstream is) {
-    return {
-        std::istream_iterator<std::string>{is}
-        , std::istream_iterator<std::string>{}
-    };
+SearchServer::Query ParseQuery(std::string_view text) {
+    SearchServer::Query query;
+    ForEachWord(text, [&query](std::string_view word) {
+        query.insert(std::string(word));
+    });
+    return query;
 }
 
 namespace {
@@ -174,13 +198,10 @@ int main() {
     int query_count;
     std::cin >> query_count;
     std::cin.ignore(); // '\n'
-    std::istringstream is{};
     for (int i = 0; i < query_count; ++i) {
         std::string line;
         std::getline(std::cin, line);
-        is.clear();
-        is.str(line);
-        std::cout << search_server.FindTopDocuments(ParseQuery(std::move(is))) << '\n';
+        std::cout << search_server.FindTopDocuments(ParseQuery(line)) << '\n';
     }
     return 0;
 }
