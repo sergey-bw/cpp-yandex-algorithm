@@ -63,17 +63,15 @@
  *         Хранение документов (обратный индекс): O(W * S + D), где
  *             W — общее количество уникальных слов во всех документах,
  *             S — средняя длина слов,
- *             D - общее количество документов содержащие уникальные слова
+ *             D - общее количество различных пар (слово, ID документа)
  * 
- *         Вспомогательная память на запрос: O(W_q), где
- *             W_q - количество уникальных слов в запросе
- * 
- *         FindAllDocuments(): O(W_q + D_rel)
+ *         Вспомогательная память обработки одного запроса: O(Q_s + D_rel), где
+ *             Q_s — длина строки запроса в символах;
  *
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/24414/problems/A/
  *     Посылка 2025: https://contest.yandex.ru/contest/24414/run-report/131201872/
- *     Посылка 2026: https://contest.yandex.ru/contest/24414/run-report/168498383/
+ *     Посылка 2026: https://contest.yandex.ru/contest/24414/run-report/169903385/
  */
 
 #include <cstddef>
@@ -162,8 +160,9 @@ void ParseDocuments(SearchServer& search_server, std::istream& in) {
     int documents_count;
     in >> documents_count;
     in.ignore(); // '\n'
+    
+    std::string line;
     for (int id = 1; id <= documents_count; ++id) {
-        std::string line;
         std::getline(in, line);
         ForEachWord(line, [id, &search_server](std::string_view word) {
             search_server.AddWord(id, std::string(word));
@@ -198,8 +197,9 @@ int main() {
     int query_count;
     std::cin >> query_count;
     std::cin.ignore(); // '\n'
+    
+    std::string line;
     for (int i = 0; i < query_count; ++i) {
-        std::string line;
         std::getline(std::cin, line);
         std::cout << search_server.FindTopDocuments(ParseQuery(line)) << '\n';
     }
