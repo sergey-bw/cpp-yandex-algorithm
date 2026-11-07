@@ -21,45 +21,47 @@
  *     Для отсортированного списка участников выведите по порядку их логины по одному в строке.
  *
  * Принцип работы:
- *     Выбрал реализацию пирамидальной сортировки методом inline,
+ *     Пирамидальная сортировка выполняется in-place,
  *     без выделения дополнительной памяти под массив элементов.
- * 
- *     В исходном векторе перестановками элементов стоим валидную кучу.
- *     Для этого для всех вершин начиная с уровня h-1 до 1
- *     делаем просеивание вниз.
- * 
- *     Затем идет этап сортировки. На вершине кучи всегда находится
- *     максимальный по значению элемент. Меняем его местами с
- *     последним элементом кучи и уменьшаем размер кучи на единицу.
+ *
+ *     Порядок участников задаётся ключом:
+ *         (-количество решённых задач, штраф, логин).
+ *     Сортировка по возрастанию ключа соответствует требуемому порядку участников.
+ *
+ *     В исходном векторе перестановками элементов строим максимальную кучу.
+ *     Для этого для всех внутренних вершин, начиная с индекса N / 2 - 1
+ *     и заканчивая корнем с индексом 0, выполняем просеивание вниз.
+ *
+ *     Затем идёт этап сортировки. На вершине кучи всегда находится
+ *     элемент с максимальным ключом. Меняем его местами с последним
+ *     элементом кучи и уменьшаем размер кучи на единицу.
  *     Просеиваем первый элемент кучи вниз.
- *     Получаем снова валидную кучу размером (N - 1), а в конце массива,
- *     за пределами размера кучи отсортированный элемент.
- *     Повторяем итерацию для всех элементов кучи.
+ *
+ *     Получаем снова корректную кучу на один элемент меньше,
+ *     а за её пределами - отсортированную часть вектора.
+ *     Повторяем действия, пока в куче не останется один элемент.
  *
  * Сложность:
- *     Временная:
- *         Функция SiftDown() - в худшем случае O(H), где H высота кучи.
- *         Так как куча является сбалансированным бинарным деревом,
- *         сложность можно выразить как O(log(N)) в худшем случае.
- * 
- *         Функция MakeHeap() - O(N), где N количество элементов кучи.
- *  
- *         Функция SortHeap - O(N) + O(N/2 * log(N)) = O(N * log(N)), где
- *            N - количество сортируемых элементов.
- * 
- *         Общая сложность O(N * log(N, M)), где
- *            N - количество сортируемых элементов,
- *            M - количество символов в сравниваемых строках
  *
- *     Пространственная:
- *         Алгоритм сортировки O(1)
+ *     По условию длина логина не превышает 20, поэтому сравнение строк примем за O(1)
  * 
- *     Хранения исходного вектора O(N * M), где
- *         N - количество элементов,
- *         M - количество символов в строках
+ *     Временная:
+ *         SiftDown() - O(log N) в худшем случае
+ *         MakeHeap() - O(N)
+ *         SortHeap() - O(N * log N) в худшем случае
+ * 
+ *         Общая временная сложность сортировки - O(N * log N), где
+ *             N - количество элементов массива
+ * 
+ *     Пространственная:
+ *         Алгоритм сортировки требует O(1) дополнительной памяти
+ *
+ *         Хранение исходного вектора - O(N), где
+ *             N - количество элементов
  *
  * Ссылки на контест:
  *     Посылка 2025: https://contest.yandex.ru/contest/24810/run-report/132557302/
+ *     Посылка 2026: https://contest.yandex.ru/contest/24810/run-report/170813507/
  */
 
 #include <iostream>
@@ -75,8 +77,8 @@
 template <typename RandomIt, typename Key>
 void SiftDown(RandomIt begin, size_t index, size_t size, Key key) {
     while (true) {
-        size_t left_index = 2 * (index + 1) - 1;
-        size_t right_index = 2 * (index + 1);
+        size_t left_index = 2 * index + 1;
+        size_t right_index = 2 * index + 2;
 
         if (left_index >= size) {
             break;
@@ -100,8 +102,8 @@ void SiftDown(RandomIt begin, size_t index, size_t size, Key key) {
 
 template <typename RandomIt, typename Key>
 void MakeHeap(RandomIt begin, size_t size, Key key) {
-    for (int index = size / 2; index >= 0; --index) {
-        SiftDown(begin, index, size, key);
+    for (size_t index = size / 2; index > 0; --index) {
+        SiftDown(begin, index - 1, size, key);
     }
 }
 
@@ -112,7 +114,7 @@ void SortHeap(RandomIt begin, RandomIt end, Key key) {
         return;
     }
     MakeHeap(begin, size, key);
-    for (int idx_end = size - 1; idx_end > 0; --idx_end) {
+    for (size_t idx_end = size - 1; idx_end > 0; --idx_end) {
         std::swap(*begin, *(begin + idx_end));
         SiftDown(begin, 0, idx_end, key);
     }
@@ -127,7 +129,7 @@ struct Intern {
 std::vector<Intern> ReadVectorInterns(std::istream& in) {
     int n;
     in >> n;
-    std::cin.ignore(); // '\n'
+    in.ignore(); // '\n'
     std::vector<Intern> result(n);
     std::istringstream is{};
     for (auto& intern : result) {
@@ -141,7 +143,7 @@ std::vector<Intern> ReadVectorInterns(std::istream& in) {
 }
 
 namespace {
-std::ostream& operator<<(std::ostream& out, std::vector<Intern> interns) {
+std::ostream& operator<<(std::ostream& out, const std::vector<Intern>& interns) {
     for (const auto& intern : interns) {
         out << intern.login << '\n';
     }
@@ -150,6 +152,9 @@ std::ostream& operator<<(std::ostream& out, std::vector<Intern> interns) {
 } // namespace
 
 int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
     std::vector<Intern> interns = ReadVectorInterns(std::cin);
     SortHeap(interns.begin(), interns.end()
         , [](const auto& item){
