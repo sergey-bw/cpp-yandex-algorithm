@@ -122,7 +122,6 @@ private:
                         visited[neighbor_vertex] = true;
                         ++island_area;
                     }
-
                 }
             }
         }
