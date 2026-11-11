@@ -26,8 +26,9 @@
  *         В префиксном дереве выставляются терминальные узлы - помечаются последние буквы каждого слова.
  *         В качестве структуры для перехода по рёбрам выбран массив фиксированного размера
  *         std::array<Node*, 26>, что даёт строгий O(1) доступ по индексу к потомкам узла.
- *         Указатели на узлы дерева хранятся в структуре Дек для защиты от валидации при реаллокациях
- *         памяти при заполненни контейнеров.
+ *         Указатели на узлы дерева хранятся в структуре Дек для защиты от инвалидации при реаллокациях
+ *         памяти при заполнении контейнеров. Стоит отметить: структура Node получилась довольно тяжелой,
+ *         на x64 системе - 208 байт (в каждый чанк будет помещаться по 2 объекта).
  * 
  *     2. Динамическое программирование:
  *         DP[i] хранит информацию - можно ли составить префикс текста длины i словами из словаря.
@@ -65,6 +66,7 @@
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/26133/problems/B/
  *     Посылка 2025: https://contest.yandex.ru/contest/26133/run-report/135531823/
+ *     Посылка 2026: https://contest.yandex.ru/contest/26133/run-report/171177914/
  */
 
 #include <iostream>
@@ -75,7 +77,7 @@
 
 class Trie {
 public:
-    Trie(): nodes(1, Node{}) {}
+    Trie() : nodes(1, Node{}) {}
 
     Trie(const std::vector<std::string>& words)
         : Trie()
@@ -89,7 +91,7 @@ public:
         Node* curr_node = GetRoot();
         for (char c : word) {
             Node*& child_node = curr_node->children[c - 'a'];
-            if(child_node == nullptr) {
+            if (child_node == nullptr) {
                 nodes.emplace_back();
                 child_node = &nodes.back();
             }
@@ -98,19 +100,20 @@ public:
         curr_node->is_terminal = true;
     }
 
-    bool CanSplitTextIntoWords(const std::string& text) const noexcept{
+    bool CanSplitTextIntoWords(const std::string& text) const noexcept {
         std::vector<bool> dp(text.length() + 1, false);
         dp[0] = true;
         for (size_t i = 1; i < dp.size() && !dp.back(); ++i) {
+            if (!dp[i - 1]) {
+                continue;
+            }
             const Node* curr_node = GetRoot();
-            if (dp[i - 1]) {
-                for (size_t j = i; j < dp.size(); ++j) {
-                    curr_node = curr_node->children[text[j - 1] - 'a'];
-                    if (curr_node == nullptr) {
-                        break;
-                    }
-                    dp[j] = dp[j] || curr_node->is_terminal;
+            for (size_t j = i; j < dp.size(); ++j) {
+                curr_node = curr_node->children[text[j - 1] - 'a'];
+                if (curr_node == nullptr) {
+                    break;
                 }
+                dp[j] = dp[j] || curr_node->is_terminal;
             }
         }
         return dp.back();
@@ -126,11 +129,15 @@ private:
         }
     };
 
-    Node* GetRoot() const noexcept { 
-        return &nodes.front();
+    Node* GetRoot() noexcept {
+        return &nodes.front(); 
     }
 
-    mutable std::deque<Node> nodes;
+    const Node* GetRoot() const noexcept {
+        return &nodes.front(); 
+    }
+
+    std::deque<Node> nodes;
 };
 
 std::vector<std::string> ReadWords(std::istream& in) {
@@ -151,9 +158,9 @@ int main() {
     std::cin >> line;
 
     if (Trie{ReadWords(std::cin)}.CanSplitTextIntoWords(line)) {
-        std::cout << "Yes";
+        std::cout << "YES";
     } else {
-        std::cout << "No";
+        std::cout << "NO";
     }
     std::cout << '\n';
     return 0;
