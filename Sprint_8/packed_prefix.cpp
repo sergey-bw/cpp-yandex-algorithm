@@ -73,6 +73,7 @@
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/26133/problems/A/
  *     Посылка 2025: https://contest.yandex.ru/contest/26133/run-report/135531327/
+ *     Посылка 2026: https://contest.yandex.ru/contest/26133/run-report/171386500/
  */
 
 #include <iostream>
@@ -122,11 +123,11 @@ std::string GetMaxCommonPrefix(const std::vector<std::string>& lines) {
     size_t max_prefix = lhs.length();
     for (size_t i = 1; i < lines.size() && max_prefix != 0; ++i) {
         std::string rhs = UnpackString(lines[i], max_prefix);
-        max_prefix = std::min(max_prefix, rhs.length());
-        for (size_t j = 0; j < max_prefix; ++j) {
-            auto [it_lhs, _] = std::mismatch(lhs.begin(), lhs.begin() + max_prefix, rhs.begin(), rhs.end());
-            max_prefix = std::distance(lhs.begin(), it_lhs);
-        }
+        auto [it_lhs, _] = std::mismatch(
+            lhs.begin(), lhs.begin() + std::min(max_prefix, rhs.length()),
+            rhs.begin()
+        );
+        max_prefix = std::distance(lhs.begin(), it_lhs);
     }
     return lhs.substr(0, max_prefix);
 }
