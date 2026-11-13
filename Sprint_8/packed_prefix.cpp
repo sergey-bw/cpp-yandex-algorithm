@@ -83,30 +83,35 @@
 #include <limits>
 
 void AppendN(std::string& lhs, const std::string& rhs, int count, size_t max_len) {
-    lhs.reserve(count * rhs.length() + lhs.length());
+    lhs.reserve(std::min(max_len, count * rhs.length() + lhs.length()));
     for (int j = 0; j < count && lhs.length() < max_len; ++j) {
-        lhs += rhs;
+        size_t len_to_add = std::min(rhs.length(), max_len - lhs.length());
+        lhs.append(rhs, 0, len_to_add);
     }
     lhs.resize(std::min(lhs.length(), max_len));
 }
 
 std::string UnpackString(const std::string& line, size_t max_len = std::numeric_limits<size_t>::max()) {
-    std::vector<std::pair<int, std::string>> stack;
-    stack.emplace_back(1, "");
-    for (size_t i = 0; i < line.size() && stack.front().second.length() < max_len; ++i) {
+    struct StackItem {
+        int count = 1;
+        std::string str;
+    };
+    std::vector<StackItem> stack;
+    stack.push_back({1, ""});
+    for (size_t i = 0; i < line.size() && stack.front().str.length() < max_len; ++i) {
         if (line[i] == '[') {
             continue;
         } else if (line[i] == ']') {
             auto [count, str] = std::move(stack.back());
             stack.pop_back();
-            AppendN(stack.back().second, str, count, max_len);
-        } else if (isdigit(line[i])) {
-            stack.emplace_back(line[i] - '0', "");
+            AppendN(stack.back().str, str, count, max_len);
+        } else if (std::isdigit(static_cast<unsigned char>(line[i]))) {
+            stack.push_back({line[i] - '0', ""});
         } else {
-            stack.back().second.push_back(line[i]);
+            stack.back().str.push_back(line[i]);
         }
     }
-    return stack.front().second.substr(0, std::min(stack.front().second.length(), max_len));
+    return stack.front().str.substr(0, std::min(stack.front().str.length(), max_len));
 }
 
 std::string GetMaxCommonPrefix(const std::vector<std::string>& lines) {
@@ -119,10 +124,8 @@ std::string GetMaxCommonPrefix(const std::vector<std::string>& lines) {
         std::string rhs = UnpackString(lines[i], max_prefix);
         max_prefix = std::min(max_prefix, rhs.length());
         for (size_t j = 0; j < max_prefix; ++j) {
-            if (lhs[j] != rhs[j]) {
-                max_prefix = j;
-                break;
-            }
+            auto [it_lhs, _] = std::mismatch(lhs.begin(), lhs.begin() + max_prefix, rhs.begin(), rhs.end());
+            max_prefix = std::distance(lhs.begin(), it_lhs);
         }
     }
     return lhs.substr(0, max_prefix);
