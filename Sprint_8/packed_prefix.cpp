@@ -77,40 +77,36 @@
 
 #include <iostream>
 #include <algorithm>
+#include <cctype>
 #include <vector>
 #include <string>
 #include <limits>
 
-void AppendN(std::string& lhs, const std::string& rhs, int count) {
-    lhs.reserve(count * rhs.length()+ lhs.length());
-    for (int j = 0; j < count; ++j) {
+void AppendN(std::string& lhs, const std::string& rhs, int count, size_t max_len) {
+    lhs.reserve(count * rhs.length() + lhs.length());
+    for (int j = 0; j < count && lhs.length() < max_len; ++j) {
         lhs += rhs;
     }
+    lhs.resize(std::min(lhs.length(), max_len));
 }
 
-std::string UnpackString(const std::string& line
-    , size_t max_len = std::numeric_limits<size_t>::max()) {
+std::string UnpackString(const std::string& line, size_t max_len = std::numeric_limits<size_t>::max()) {
     std::vector<std::pair<int, std::string>> stack;
     stack.emplace_back(1, "");
-    for (size_t i = 0; i < line.size(); ++i) {
-        if (stack[0].second.length() >= max_len) {
-            break;
-        }
-
+    for (size_t i = 0; i < line.size() && stack.front().second.length() < max_len; ++i) {
         if (line[i] == '[') {
             continue;
         } else if (line[i] == ']') {
             auto [count, str] = std::move(stack.back());
             stack.pop_back();
-            AppendN(stack.back().second, str, count);
+            AppendN(stack.back().second, str, count, max_len);
         } else if (isdigit(line[i])) {
             stack.emplace_back(line[i] - '0', "");
         } else {
             stack.back().second.push_back(line[i]);
         }
     }
-    return stack[0].second.substr(0
-        , std::min(stack.back().second.length(), max_len));
+    return stack.front().second.substr(0, std::min(stack.front().second.length(), max_len));
 }
 
 std::string GetMaxCommonPrefix(const std::vector<std::string>& lines) {
@@ -133,12 +129,15 @@ std::string GetMaxCommonPrefix(const std::vector<std::string>& lines) {
 }
 
 int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
     int n;
     std::cin >> n;
     std::vector<std::string> lines(n);
     for (auto& str : lines) {
         std::cin >> str;
     }
-    std::cout << GetMaxCommonPrefix(lines) << std::endl;
+    std::cout << GetMaxCommonPrefix(lines) << '\n';
     return 0;
 }
