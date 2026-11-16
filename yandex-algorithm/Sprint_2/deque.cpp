@@ -38,9 +38,10 @@
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/22781/problems/A/
  *     Посылка 2024: https://contest.yandex.ru/contest/22781/run-report/126854278/
- *     Посылка 2026: https://contest.yandex.ru/contest/22781/run-report/167967522/
+ *     Посылка 2026: https://contest.yandex.ru/contest/22781/run-report/171935417/
  */
 
+#include <cassert>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -74,12 +75,14 @@ public:
     }
 
     void push_back(T value) {
+        assert(!is_full());
         buffer_[index_back_] = std::move(value);
         index_back_ = NextIndex(index_back_);
         ++size_;
     }
 
     void push_front(T value) {
+        assert(!is_full());
         buffer_[index_front_] = std::move(value);
         index_front_ = PrevIndex(index_front_);
         ++size_;
