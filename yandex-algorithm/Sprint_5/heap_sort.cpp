@@ -61,7 +61,7 @@
  *
  * Ссылки на контест:
  *     Посылка 2025: https://contest.yandex.ru/contest/24810/run-report/132557302/
- *     Посылка 2026: https://contest.yandex.ru/contest/24810/run-report/170813507/
+ *     Посылка 2026: https://contest.yandex.ru/contest/24810/run-report/171942068/
  */
 
 #include <iostream>
@@ -158,10 +158,10 @@ int main() {
     std::vector<Intern> interns = ReadVectorInterns(std::cin);
     SortHeap(interns.begin(), interns.end()
         , [](const auto& item){
-            return std::tuple<int, int, std::string_view>(
-                -item.count_task
-                , item.fine
-                , item.login
+            return std::make_tuple(
+                -item.count_task,
+                item.fine,
+                std::string_view{item.login}
             );
        });
     std::cout << interns;
