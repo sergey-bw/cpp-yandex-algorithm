@@ -28,11 +28,11 @@
  *     Вывести наибольший общий префикс распакованных строк.
  *
  * Ограничения:
- *     - Число строк n: 1 ≤ n ≤ 1000.
- *     - Длина каждой строки после распаковки не превосходит 10^5 символов.
- *     - Число повторений k перед скобками: однозначное число (1 ≤ k ≤ 9).
- *     - Строки состоят из строчных букв латинского алфавита, цифр от '1' до '9'
- *       и скобок '[' и ']'.
+ *     Число строк n: 1 ≤ n ≤ 1000.
+ *     Длина каждой строки после распаковки не превосходит 10^5 символов.
+ *     Число повторений k перед скобками: однозначное число (1 ≤ k ≤ 9).
+ *     Строки состоят из строчных букв латинского алфавита, цифр от '1' до '9'
+ *     и скобок '[' и ']'.
  *
  * Принцип работы:
  *     1. Распаковка ЗС:
@@ -73,9 +73,11 @@
  * Ссылки на контест:
  *     Условие: https://contest.yandex.ru/contest/26133/problems/A/
  *     Посылка 2025: https://contest.yandex.ru/contest/26133/run-report/135531327/
- *     Посылка 2026: https://contest.yandex.ru/contest/26133/run-report/171386500/
+ *     Посылка 2026: https://contest.yandex.ru/contest/26133/run-report/172172927/
  */
 
+#include <iterator>
+#include <utility>
 #include <iostream>
 #include <algorithm>
 #include <cctype>
@@ -89,7 +91,6 @@ void AppendN(std::string& lhs, const std::string& rhs, int count, size_t max_len
         size_t len_to_add = std::min(rhs.length(), max_len - lhs.length());
         lhs.append(rhs, 0, len_to_add);
     }
-    lhs.resize(std::min(lhs.length(), max_len));
 }
 
 std::string UnpackString(const std::string& line, size_t max_len = std::numeric_limits<size_t>::max()) {
@@ -112,7 +113,7 @@ std::string UnpackString(const std::string& line, size_t max_len = std::numeric_
             stack.back().str.push_back(line[i]);
         }
     }
-    return stack.front().str.substr(0, std::min(stack.front().str.length(), max_len));
+    return stack.front().str.substr(0, max_len);
 }
 
 std::string GetMaxCommonPrefix(const std::vector<std::string>& lines) {
